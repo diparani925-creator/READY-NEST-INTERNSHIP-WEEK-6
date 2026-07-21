@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { prisma } from '../prisma/client.js';
+import { env } from '../config/env.js';
 import { hashPassword, comparePassword } from '../utils/password.js';
 import {
   generateAccessToken,
@@ -263,7 +264,7 @@ export const forgotPassword = async (req: Request, res: Response) => {
   }
 
   const resetToken = generateResetToken(user.id, user.password);
-  const resetUrl = `http://localhost:3000/reset-password?userId=${user.id}&token=${resetToken}`;
+  const resetUrl = `${env.FRONTEND_URL}/reset-password?userId=${user.id}&token=${resetToken}`;
 
   return res.status(200).json({
     success: true,

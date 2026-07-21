@@ -40,7 +40,12 @@ initSocketServer(httpServer);
 app.use(helmet());
 app.use(
   cors({
-    origin: env.CORS_ORIGIN,
+    origin: (origin, callback) => {
+      // Allow requests with no origin (like mobile apps or curl)
+      if (!origin) return callback(null, true);
+      // Reflect requesting origin to allow credentials
+      callback(null, origin);
+    },
     credentials: true,
   })
 );

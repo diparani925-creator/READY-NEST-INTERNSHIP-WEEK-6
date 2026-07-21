@@ -14,11 +14,12 @@ interface AuthenticatedSocket extends Socket {
 let io: Server | null = null;
 
 export function initSocketServer(httpServer: HttpServer): Server {
-  const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3000';
-
   io = new Server(httpServer, {
     cors: {
-      origin: FRONTEND_URL,
+      origin: (origin, callback) => {
+        if (!origin) return callback(null, true);
+        callback(null, origin);
+      },
       credentials: true,
       methods: ['GET', 'POST'],
     },

@@ -13,7 +13,7 @@ export const JWT_CONFIG = {
 export const getCookieOptions = (maxAgeMs: number): CookieOptions => ({
   httpOnly: true,
   secure: env.NODE_ENV === 'production',
-  sameSite: 'lax',
+  sameSite: env.NODE_ENV === 'production' ? 'none' : 'lax',
   maxAge: maxAgeMs,
   path: '/',
 });

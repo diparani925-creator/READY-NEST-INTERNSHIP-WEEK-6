@@ -1,4 +1,5 @@
 import React from 'react';
+import Link from 'next/link';
 import { Navbar } from '@/components/Navbar';
 import { Footer } from '@/components/Footer';
 import { fetchHealthStatus } from '@/lib/api';
@@ -63,12 +64,13 @@ export default async function HomePage() {
 
               {/* Actions */}
               <div className="mt-10 flex items-center justify-center gap-x-6">
-                <button
+                <Link
+                  href="/login"
                   id="main-login-button"
                   className="rounded-xl bg-blue-600 px-8 py-3.5 text-base font-semibold text-white shadow-lg shadow-blue-500/30 transition-all duration-200 hover:bg-blue-700 hover:shadow-blue-500/40 hover:-translate-y-0.5 active:scale-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
                 >
                   Login to Portal
-                </button>
+                </Link>
               </div>
 
               {/* Health Check Card */}
