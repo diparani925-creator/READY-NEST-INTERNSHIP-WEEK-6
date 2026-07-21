@@ -1,4 +1,4 @@
-import { Request, Response } from 'express';
+import { Request, Response, NextFunction } from 'express';
 import { prisma } from '../prisma/client.js';
 import { env } from '../config/env.js';
 import { hashPassword, comparePassword } from '../utils/password.js';
@@ -112,74 +112,78 @@ export const signup = async (req: Request, res: Response) => {
   });
 };
 
-export const login = async (req: Request, res: Response) => {
-  const validation = loginSchema.safeParse(req.body);
-  if (!validation.success) {
-    return res.status(400).json({
-      success: false,
-      message: 'Validation failed',
-      errors: validation.error.flatten().fieldErrors,
-    });
-  }
+export const login = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const validation = loginSchema.safeParse(req.body);
+    if (!validation.success) {
+      return res.status(400).json({
+        success: false,
+        message: 'Validation failed',
+        errors: validation.error.flatten().fieldErrors,
+      });
+    }
 
-  const { email, password, role } = validation.data;
+    const { email, password, role } = validation.data;
 
-  const user = await prisma.user.findUnique({
-    where: { email: email.toLowerCase() },
-    include: {
-      patient: true,
-      doctor: true,
-    },
-  });
-
-  if (!user || !user.isActive) {
-    return res.status(401).json({
-      success: false,
-      message: 'Invalid credentials or account disabled',
-    });
-  }
-
-  // Ensure role match
-  if (user.role !== role) {
-    return res.status(403).json({
-      success: false,
-      message: `Invalid role selected for this account. Please login as ${user.role}.`,
-    });
-  }
-
-  const isPasswordValid = await comparePassword(password, user.password);
-  if (!isPasswordValid) {
-    return res.status(401).json({
-      success: false,
-      message: 'Invalid credentials',
-    });
-  }
-
-  const payload = {
-    userId: user.id,
-    email: user.email,
-    role: user.role,
-  };
-
-  const accessToken = generateAccessToken(payload);
-  const refreshToken = generateRefreshToken(payload);
-
-  setAuthCookies(res, accessToken, refreshToken);
-
-  return res.status(200).json({
-    success: true,
-    message: 'Login successful',
-    data: {
-      user: {
-        id: user.id,
-        fullName: user.fullName,
-        email: user.email,
-        role: user.role,
-        patientId: user.patient?.id || null,
-        doctorId: user.doctor?.id || null,
+    const user = await prisma.user.findUnique({
+      where: { email: email.toLowerCase() },
+      include: {
+        patient: true,
+        doctor: true,
       },
-    },
-  });
+    });
+
+    if (!user || !user.isActive) {
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid credentials or account disabled',
+      });
+    }
+
+    // Ensure role match
+    if (user.role !== role) {
+      return res.status(403).json({
+        success: false,
+        message: `Invalid role selected for this account. Please login as ${user.role}.`,
+      });
+    }
+
+    const isPasswordValid = await comparePassword(password, user.password);
+    if (!isPasswordValid) {
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid credentials',
+      });
+    }
+
+    const payload = {
+      userId: user.id,
+      email: user.email,
+      role: user.role,
+    };
+
+    const accessToken = generateAccessToken(payload);
+    const refreshToken = generateRefreshToken(payload);
+
+    setAuthCookies(res, accessToken, refreshToken);
+
+    return res.status(200).json({
+      success: true,
+      message: 'Login successful',
+      data: {
+        user: {
+          id: user.id,
+          fullName: user.fullName,
+          email: user.email,
+          role: user.role,
+          patientId: user.patient?.id || null,
+          doctorId: user.doctor?.id || null,
+        },
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
 };
 
 export const logout = async (_req: Request, res: Response) => {
