@@ -3,6 +3,8 @@ import { z } from 'zod';
 
 dotenv.config();
 
+console.log("DATABASE_URL exists:", Boolean(process.env.DATABASE_URL));
+
 const envSchema = z.object({
   PORT: z.string().default('5000'),
   NODE_ENV: z.string().default('production'),
