@@ -31,9 +31,6 @@ import path from 'path';
 import { createServer } from 'http';
 import { initSocketServer } from './services/socketService.js';
 import { logger } from './utils/logger.js';
-import { prisma } from './prisma/client.js';
-import { Role } from '@prisma/client';
-import bcrypt from 'bcrypt';
 
 const app = express();
 const httpServer = createServer(app);
@@ -99,50 +96,6 @@ app.use('/api', limiter);
 // Routes (Mounted with and without /api prefix for production URL compatibility)
 app.use('/api', healthRoutes);
 app.use('/health', healthRoutes);
-
-app.get('/api/init-db', async (req, res) => {
-  try {
-    const adminEmail = 'admin@hospital.com';
-    const adminPassword = 'Admin@123';
-
-    // 1. Delete patient version if it exists
-    const patientUser = await prisma.user.findFirst({
-      where: { email: adminEmail, role: Role.PATIENT }
-    });
-    if (patientUser) {
-      await prisma.patient.deleteMany({ where: { userId: patientUser.id } });
-      await prisma.user.delete({ where: { id: patientUser.id } });
-    }
-
-    // 2. Seed admin if not exists
-    const existingUser = await prisma.user.findUnique({ where: { email: adminEmail } });
-    if (!existingUser) {
-      const hashedPassword = await bcrypt.hash(adminPassword, 10);
-      await prisma.user.create({
-        data: {
-          fullName: 'System Administrator',
-          email: adminEmail,
-          password: hashedPassword,
-          role: Role.ADMIN,
-          phoneNumber: '+10000000000',
-          isActive: true
-        }
-      });
-      return res.status(200).json({ success: true, message: 'Database initialized successfully. Admin user created.' });
-    } else {
-      if (existingUser.role !== Role.ADMIN) {
-        await prisma.user.update({
-          where: { id: existingUser.id },
-          data: { role: Role.ADMIN }
-        });
-        return res.status(200).json({ success: true, message: 'Existing user role updated to ADMIN.' });
-      }
-      return res.status(200).json({ success: true, message: 'Admin user already exists and is configured correctly.' });
-    }
-  } catch (err: any) {
-    return res.status(500).json({ success: false, error: err.message });
-  }
-});
 
 app.use('/api/auth', authRoutes);
 app.use('/auth', authRoutes);
